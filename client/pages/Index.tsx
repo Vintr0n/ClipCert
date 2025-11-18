@@ -119,7 +119,7 @@ export default function Index() {
             <div className="relative">
               <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 opacity-0 blur-lg"></div>
               <h1 className="relative text-5xl font-bold tracking-tight text-white md:text-6xl">
-                Video Frame Compare
+                ClipCert
               </h1>
             </div>
           </div>
