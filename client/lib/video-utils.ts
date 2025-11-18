@@ -1,9 +1,10 @@
 /**
- * Extract frames from a video file
+ * Extract frames from a video file with center-crop region
  */
 export async function extractFrames(
   videoFile: File,
-  frameInterval: number = 100
+  frameInterval: number = 2,
+  cropSize: number = 250
 ): Promise<ImageData[]> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
@@ -16,27 +17,46 @@ export async function extractFrames(
     }
 
     video.onloadedmetadata = () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvas.width = cropSize;
+      canvas.height = cropSize;
 
       const frames: ImageData[] = [];
-      let currentTime = 0;
+      let frameCount = 0;
 
       const extractFrame = () => {
-        if (currentTime >= video.duration) {
+        if (frameCount * frameInterval / video.videoWidth >= video.duration) {
           video.pause();
           resolve(frames);
           return;
         }
 
-        video.currentTime = currentTime;
+        video.currentTime = (frameCount * frameInterval) / video.frameRate || (frameCount * frameInterval * 0.033);
       };
 
       video.onseeked = () => {
-        ctx.drawImage(video, 0, 0);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const h = video.videoHeight;
+        const w = video.videoWidth;
+        const cx = w / 2;
+        const cy = h / 2;
+        const rw = cropSize;
+        const rh = cropSize;
+
+        // Draw center-cropped region
+        ctx.drawImage(
+          video,
+          Math.max(0, cx - rw / 2),
+          Math.max(0, cy - rh / 2),
+          Math.min(rw, w),
+          Math.min(rh, h),
+          0,
+          0,
+          cropSize,
+          cropSize
+        );
+
+        const imageData = ctx.getImageData(0, 0, cropSize, cropSize);
         frames.push(imageData);
-        currentTime += frameInterval / 1000;
+        frameCount += 1;
         extractFrame();
       };
 
