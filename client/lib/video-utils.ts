@@ -103,15 +103,28 @@ export function compareFrames(frame1: ImageData, frame2: ImageData): number {
 /**
  * Generate frame thumbnails for preview
  */
-export async function generateFrameThumbnail(
+export function generateFrameThumbnail(
   imageData: ImageData,
   maxWidth: number = 100,
   maxHeight: number = 60
-): Promise<string> {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+): string {
+  const tempCanvas = document.createElement("canvas");
+  const tempCtx = tempCanvas.getContext("2d");
 
-  if (!ctx) {
+  if (!tempCtx) {
+    throw new Error("Failed to get canvas context");
+  }
+
+  // First, put the full resolution image on a temporary canvas
+  tempCanvas.width = imageData.width;
+  tempCanvas.height = imageData.height;
+  tempCtx.putImageData(imageData, 0, 0);
+
+  // Now create a thumbnail by drawing the full image onto a smaller canvas
+  const thumbCanvas = document.createElement("canvas");
+  const thumbCtx = thumbCanvas.getContext("2d");
+
+  if (!thumbCtx) {
     throw new Error("Failed to get canvas context");
   }
 
@@ -125,10 +138,10 @@ export async function generateFrameThumbnail(
     height = width / aspectRatio;
   }
 
-  canvas.width = width;
-  canvas.height = height;
+  thumbCanvas.width = Math.round(width);
+  thumbCanvas.height = Math.round(height);
 
-  // Resize the image data
-  ctx.putImageData(imageData, 0, 0);
-  return canvas.toDataURL("image/jpeg", 0.7);
+  // Draw the resized image
+  thumbCtx.drawImage(tempCanvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
+  return thumbCanvas.toDataURL("image/jpeg", 0.7);
 }
