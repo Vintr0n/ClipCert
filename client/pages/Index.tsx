@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { extractFrames, compareFrames, generateFrameThumbnail } from "@/lib/video-utils";
-import { Play, Upload, X, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
+import { Play, Upload, X, CheckCircle2, AlertCircle, XCircle, ChevronDown } from "lucide-react";
 
 interface FrameComparison {
   frameIndex: number;
@@ -9,6 +9,9 @@ interface FrameComparison {
   video1Thumbnail: string;
   video2Thumbnail: string;
 }
+
+const FRAME_INTERVAL = 2; // Every other frame
+const CROP_SIZE = 250; // Center crop size
 
 export default function Index() {
   const [video1, setVideo1] = useState<File | null>(null);
@@ -18,6 +21,10 @@ export default function Index() {
   const [isComparing, setIsComparing] = useState(false);
   const [comparisons, setComparisons] = useState<FrameComparison[]>([]);
   const [comparisonProgress, setComparisonProgress] = useState(0);
+  const [timelineExpanded, setTimelineExpanded] = useState(true);
+  const [selectedFrameIndex, setSelectedFrameIndex] = useState<number | null>(null);
+  const frameListRef = useRef<HTMLDivElement>(null);
+  const frameItemsRef = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const handleVideoSelect = (file: File, isVideo1: boolean) => {
     const url = URL.createObjectURL(file);
@@ -38,12 +45,13 @@ export default function Index() {
     setIsComparing(true);
     setComparisonProgress(0);
     setComparisons([]);
+    setSelectedFrameIndex(null);
 
     try {
-      const frames1 = await extractFrames(video1);
+      const frames1 = await extractFrames(video1, FRAME_INTERVAL, CROP_SIZE);
       setComparisonProgress(50);
 
-      const frames2 = await extractFrames(video2);
+      const frames2 = await extractFrames(video2, FRAME_INTERVAL, CROP_SIZE);
       setComparisonProgress(75);
 
       const frameComparisons: FrameComparison[] = [];
@@ -70,6 +78,17 @@ export default function Index() {
 
   const getThumbnailUrl = (imageData: ImageData): string => {
     return generateFrameThumbnail(imageData, 100, 60);
+  };
+
+  const handleTimelineClick = (frameIndex: number) => {
+    setSelectedFrameIndex(frameIndex);
+    // Scroll to the frame item
+    setTimeout(() => {
+      const element = frameItemsRef.current.get(frameIndex);
+      if (element && frameListRef.current) {
+        element.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }, 0);
   };
 
   const stats = {
@@ -162,7 +181,7 @@ export default function Index() {
 
         {/* Results Section */}
         {comparisons.length > 0 && (
-          <div className="space-y-12">
+          <div className="space-y-8">
             {/* Stats Cards */}
             <div className="grid gap-4 sm:grid-cols-3">
               <StatCard
@@ -182,23 +201,105 @@ export default function Index() {
               />
             </div>
 
-            {/* Timeline */}
-            <div className="rounded-xl bg-white/5 p-8 backdrop-blur-sm">
-              <h2 className="mb-8 text-2xl font-bold text-white">
-                Frame-by-Frame Timeline
-              </h2>
-              <div className="space-y-2">
-                {comparisons.map((comparison) => (
-                  <FrameComparisonItem
-                    key={comparison.frameIndex}
-                    frameIndex={comparison.frameIndex}
-                    similarity={comparison.similarity}
-                    video1Thumbnail={comparison.video1Thumbnail}
-                    video2Thumbnail={comparison.video2Thumbnail}
-                  />
-                ))}
+            {/* Timeline Section - Always Visible */}
+            <div className="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
+              <div className="space-y-4">
+                {/* Timeline Header with Toggle */}
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-white">
+                    Comparison Timeline
+                  </h2>
+                  <button
+                    onClick={() => setTimelineExpanded(!timelineExpanded)}
+                    className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-white/20"
+                  >
+                    <span>{comparisons.length} frames</span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${
+                        timelineExpanded ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Visual Timeline Bar */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <div className="flex gap-0.5 rounded-lg bg-white/10 p-2">
+                        {comparisons.map((comparison) => {
+                          const isMatch = comparison.similarity > 0.8;
+                          const isPartial = comparison.similarity > 0.5;
+                          const bgColor = isMatch
+                            ? "bg-green-500"
+                            : isPartial
+                              ? "bg-yellow-500"
+                              : "bg-red-500";
+                          const isSelected = selectedFrameIndex === comparison.frameIndex;
+
+                          return (
+                            <button
+                              key={comparison.frameIndex}
+                              onClick={() => handleTimelineClick(comparison.frameIndex)}
+                              className={`flex-1 h-8 rounded transition hover:opacity-90 ${bgColor} ${
+                                isSelected ? "ring-2 ring-white ring-offset-1 ring-offset-slate-900" : ""
+                              }`}
+                              title={`Frame ${comparison.frameIndex + 1}: ${(comparison.similarity * 100).toFixed(0)}%`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="flex flex-wrap gap-4 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="h-3 w-3 rounded bg-green-500"></div>
+                      <span className="text-slate-400">Match (80%+)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-3 w-3 rounded bg-yellow-500"></div>
+                      <span className="text-slate-400">Partial (50-80%)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-3 w-3 rounded bg-red-500"></div>
+                      <span className="text-slate-400">Different (&lt;50%)</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+
+            {/* Collapsible Frame Details */}
+            {timelineExpanded && (
+              <div className="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
+                <h2 className="mb-6 text-2xl font-bold text-white">
+                  Frame-by-Frame Analysis
+                </h2>
+                <div ref={frameListRef} className="space-y-2 max-h-96 overflow-y-auto">
+                  {comparisons.map((comparison) => (
+                    <div
+                      key={comparison.frameIndex}
+                      ref={(el) => {
+                        if (el) {
+                          frameItemsRef.current.set(comparison.frameIndex, el);
+                        }
+                      }}
+                      onClick={() => handleTimelineClick(comparison.frameIndex)}
+                    >
+                      <FrameComparisonItem
+                        frameIndex={comparison.frameIndex}
+                        similarity={comparison.similarity}
+                        video1Thumbnail={comparison.video1Thumbnail}
+                        video2Thumbnail={comparison.video2Thumbnail}
+                        isSelected={selectedFrameIndex === comparison.frameIndex}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -287,17 +388,11 @@ function StatCard({ label, value, icon }: StatCardProps) {
   const getIcon = () => {
     switch (icon) {
       case "match":
-        return (
-          <CheckCircle2 className="h-6 w-6 text-green-400" />
-        );
+        return <CheckCircle2 className="h-6 w-6 text-green-400" />;
       case "similarity":
-        return (
-          <AlertCircle className="h-6 w-6 text-purple-400" />
-        );
+        return <AlertCircle className="h-6 w-6 text-purple-400" />;
       default:
-        return (
-          <Play className="h-6 w-6 text-blue-400" />
-        );
+        return <Play className="h-6 w-6 text-blue-400" />;
     }
   };
 
@@ -326,6 +421,7 @@ interface FrameComparisonItemProps {
   similarity: number;
   video1Thumbnail: string;
   video2Thumbnail: string;
+  isSelected?: boolean;
 }
 
 function FrameComparisonItem({
@@ -333,6 +429,7 @@ function FrameComparisonItem({
   similarity,
   video1Thumbnail,
   video2Thumbnail,
+  isSelected = false,
 }: FrameComparisonItemProps) {
   const isMatch = similarity > 0.8;
   const isPartial = similarity > 0.5;
@@ -357,46 +454,56 @@ function FrameComparisonItem({
       : "bg-red-500";
 
   return (
-    <div className="group rounded-lg border border-white/5 bg-white/5 p-4 transition hover:border-white/20 hover:bg-white/10">
-      <div className="flex items-center gap-4">
-        <div className="min-w-max text-sm font-medium text-slate-400">
-          Frame {frameIndex + 1}
-        </div>
-
-        <div className="flex gap-2">
-          <img
-            src={video1Thumbnail}
-            alt={`Frame ${frameIndex} video 1`}
-            className="h-14 w-20 rounded border border-white/20 object-cover"
-          />
-          <img
-            src={video2Thumbnail}
-            alt={`Frame ${frameIndex} video 2`}
-            className="h-14 w-20 rounded border border-white/20 object-cover"
-          />
-        </div>
-
-        <div className="flex-1">
-          <div className="mb-2 flex items-center gap-2">
-            <div className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${statusBg} ${statusColor}`}>
-              {isMatch ? (
-                <CheckCircle2 className="h-3.5 w-3.5" />
-              ) : isPartial ? (
-                <AlertCircle className="h-3.5 w-3.5" />
-              ) : (
-                <XCircle className="h-3.5 w-3.5" />
-              )}
-              {statusLabel}
-            </div>
-            <span className="text-sm font-semibold text-slate-200">
-              {(similarity * 100).toFixed(0)}%
-            </span>
+    <div
+      className={`group cursor-pointer rounded-lg border transition ${
+        isSelected
+          ? "border-white/40 bg-white/15"
+          : "border-white/5 bg-white/5 hover:border-white/20 hover:bg-white/10"
+      }`}
+    >
+      <div className="p-4">
+        <div className="flex items-center gap-4">
+          <div className="min-w-max text-sm font-medium text-slate-400">
+            Frame {frameIndex + 1}
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-white/10">
-            <div
-              className={`h-full transition-all duration-500 ${progressBg}`}
-              style={{ width: `${similarity * 100}%` }}
+
+          <div className="flex gap-2">
+            <img
+              src={video1Thumbnail}
+              alt={`Frame ${frameIndex} video 1`}
+              className="h-14 w-20 rounded border border-white/20 object-cover"
             />
+            <img
+              src={video2Thumbnail}
+              alt={`Frame ${frameIndex} video 2`}
+              className="h-14 w-20 rounded border border-white/20 object-cover"
+            />
+          </div>
+
+          <div className="flex-1">
+            <div className="mb-2 flex items-center gap-2">
+              <div
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${statusBg} ${statusColor}`}
+              >
+                {isMatch ? (
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                ) : isPartial ? (
+                  <AlertCircle className="h-3.5 w-3.5" />
+                ) : (
+                  <XCircle className="h-3.5 w-3.5" />
+                )}
+                {statusLabel}
+              </div>
+              <span className="text-sm font-semibold text-slate-200">
+                {(similarity * 100).toFixed(0)}%
+              </span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-white/10">
+              <div
+                className={`h-full transition-all duration-500 ${progressBg}`}
+                style={{ width: `${similarity * 100}%` }}
+              />
+            </div>
           </div>
         </div>
       </div>
