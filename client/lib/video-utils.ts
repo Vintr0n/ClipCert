@@ -22,15 +22,17 @@ export async function extractFrames(
 
       const frames: ImageData[] = [];
       let frameCount = 0;
+      let currentTime = 0;
+      const timeBetweenFrames = frameInterval / 30; // Assuming ~30fps, adjust based on frame interval
 
       const extractFrame = () => {
-        if (frameCount * frameInterval / video.videoWidth >= video.duration) {
+        if (currentTime >= video.duration) {
           video.pause();
           resolve(frames);
           return;
         }
 
-        video.currentTime = (frameCount * frameInterval) / video.frameRate || (frameCount * frameInterval * 0.033);
+        video.currentTime = currentTime;
       };
 
       video.onseeked = () => {
@@ -56,7 +58,9 @@ export async function extractFrames(
 
         const imageData = ctx.getImageData(0, 0, cropSize, cropSize);
         frames.push(imageData);
+
         frameCount += 1;
+        currentTime += timeBetweenFrames;
         extractFrame();
       };
 
