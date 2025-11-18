@@ -1,7 +1,19 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { extractFrames, compareFrames, generateFrameThumbnail } from "@/lib/video-utils";
-import { Play, Upload, X, CheckCircle2, AlertCircle, XCircle, ChevronDown } from "lucide-react";
+import {
+  extractFrames,
+  compareFrames,
+  generateFrameThumbnail,
+} from "@/lib/video-utils";
+import {
+  Play,
+  Upload,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
+  ChevronDown,
+} from "lucide-react";
 
 interface FrameComparison {
   frameIndex: number;
@@ -22,7 +34,9 @@ export default function Index() {
   const [comparisons, setComparisons] = useState<FrameComparison[]>([]);
   const [comparisonProgress, setComparisonProgress] = useState(0);
   const [timelineExpanded, setTimelineExpanded] = useState(true);
-  const [selectedFrameIndex, setSelectedFrameIndex] = useState<number | null>(null);
+  const [selectedFrameIndex, setSelectedFrameIndex] = useState<number | null>(
+    null,
+  );
   const frameListRef = useRef<HTMLDivElement>(null);
   const frameItemsRef = useRef<Map<number, HTMLDivElement>>(new Map());
 
@@ -124,7 +138,8 @@ export default function Index() {
             </div>
           </div>
           <p className="mt-6 text-xl text-slate-300">
-            Upload two videos and instantly analyse frame-by-frame similarity with visual timeline
+            Upload two videos and instantly analyse frame-by-frame similarity
+            with visual timeline
           </p>
         </div>
 
@@ -235,14 +250,19 @@ export default function Index() {
                             : isPartial
                               ? "bg-yellow-500"
                               : "bg-red-500";
-                          const isSelected = selectedFrameIndex === comparison.frameIndex;
+                          const isSelected =
+                            selectedFrameIndex === comparison.frameIndex;
 
                           return (
                             <button
                               key={comparison.frameIndex}
-                              onClick={() => handleTimelineClick(comparison.frameIndex)}
+                              onClick={() =>
+                                handleTimelineClick(comparison.frameIndex)
+                              }
                               className={`flex-1 h-8 rounded transition hover:opacity-90 ${bgColor} ${
-                                isSelected ? "ring-2 ring-white ring-offset-1 ring-offset-slate-900" : ""
+                                isSelected
+                                  ? "ring-2 ring-white ring-offset-1 ring-offset-slate-900"
+                                  : ""
                               }`}
                               title={`Frame ${comparison.frameIndex + 1}: ${(comparison.similarity * 100).toFixed(0)}%`}
                             />
@@ -264,7 +284,9 @@ export default function Index() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="h-3 w-3 rounded bg-red-500"></div>
-                      <span className="text-slate-400">Different (&lt;50%)</span>
+                      <span className="text-slate-400">
+                        Different (&lt;50%)
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -277,7 +299,10 @@ export default function Index() {
                 <h2 className="mb-6 text-2xl font-bold text-white">
                   Frame-by-Frame Analysis
                 </h2>
-                <div ref={frameListRef} className="space-y-2 max-h-96 overflow-y-auto">
+                <div
+                  ref={frameListRef}
+                  className="space-y-2 max-h-96 overflow-y-auto"
+                >
                   {comparisons.map((comparison) => (
                     <div
                       key={comparison.frameIndex}
@@ -293,7 +318,9 @@ export default function Index() {
                         similarity={comparison.similarity}
                         video1Thumbnail={comparison.video1Thumbnail}
                         video2Thumbnail={comparison.video2Thumbnail}
-                        isSelected={selectedFrameIndex === comparison.frameIndex}
+                        isSelected={
+                          selectedFrameIndex === comparison.frameIndex
+                        }
                       />
                     </div>
                   ))}
@@ -340,7 +367,11 @@ function VideoUploadPanel({
               </button>
             </div>
             <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
-              <video src={preview} controls className="h-full w-full object-cover" />
+              <video
+                src={preview}
+                controls
+                className="h-full w-full object-cover"
+              />
             </div>
           </div>
         ) : (
@@ -356,7 +387,9 @@ function VideoUploadPanel({
               <p className="mt-1 text-sm text-slate-300">
                 Click to upload or drag and drop
               </p>
-              <p className="text-xs text-slate-400">MP4, WebM, or other video</p>
+              <p className="text-xs text-slate-400">
+                MP4, WebM, or other video
+              </p>
             </div>
           </div>
         )}
@@ -404,7 +437,9 @@ function StatCard({ label, value, icon }: StatCardProps) {
         : "from-blue-600/20 to-cyan-600/20";
 
   return (
-    <div className={`rounded-xl border border-white/10 bg-gradient-to-br ${bgGradient} p-6 backdrop-blur-sm`}>
+    <div
+      className={`rounded-xl border border-white/10 bg-gradient-to-br ${bgGradient} p-6 backdrop-blur-sm`}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-slate-300">{label}</p>

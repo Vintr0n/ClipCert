@@ -4,7 +4,7 @@
 export async function extractFrames(
   videoFile: File,
   frameInterval: number = 2,
-  cropSize: number = 250
+  cropSize: number = 250,
 ): Promise<ImageData[]> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
@@ -53,7 +53,7 @@ export async function extractFrames(
           0,
           0,
           cropSize,
-          cropSize
+          cropSize,
         );
 
         const imageData = ctx.getImageData(0, 0, cropSize, cropSize);
@@ -130,7 +130,7 @@ export function compareFrames(frame1: ImageData, frame2: ImageData): number {
 export function generateFrameThumbnail(
   imageData: ImageData,
   maxWidth: number = 100,
-  maxHeight: number = 60
+  maxHeight: number = 60,
 ): string {
   const tempCanvas = document.createElement("canvas");
   const tempCtx = tempCanvas.getContext("2d");
