@@ -68,13 +68,13 @@ export default function Index() {
     }
   };
 
-  const getThumbnailUrl = (canvas: any): string => {
+  const getThumbnailUrl = (imageData: ImageData): string => {
     const tempCanvas = document.createElement("canvas");
-    tempCanvas.width = 100;
-    tempCanvas.height = 60;
+    tempCanvas.width = Math.min(imageData.width, 100);
+    tempCanvas.height = Math.min(imageData.height, 60);
     const ctx = tempCanvas.getContext("2d");
-    if (ctx && canvas) {
-      ctx.putImageData(canvas, 0, 0);
+    if (ctx) {
+      ctx.putImageData(imageData, 0, 0);
     }
     return tempCanvas.toDataURL("image/jpeg", 0.6);
   };
