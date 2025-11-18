@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { extractFrames, compareFrames } from "@/lib/video-utils";
+import { extractFrames, compareFrames, generateFrameThumbnail } from "@/lib/video-utils";
 import { Play, Upload, X, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
 
 interface FrameComparison {
@@ -69,14 +69,7 @@ export default function Index() {
   };
 
   const getThumbnailUrl = (imageData: ImageData): string => {
-    const tempCanvas = document.createElement("canvas");
-    tempCanvas.width = Math.min(imageData.width, 100);
-    tempCanvas.height = Math.min(imageData.height, 60);
-    const ctx = tempCanvas.getContext("2d");
-    if (ctx) {
-      ctx.putImageData(imageData, 0, 0);
-    }
-    return tempCanvas.toDataURL("image/jpeg", 0.6);
+    return generateFrameThumbnail(imageData, 100, 60);
   };
 
   const stats = {
