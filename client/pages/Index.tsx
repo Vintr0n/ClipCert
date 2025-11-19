@@ -137,8 +137,8 @@ export default function Index() {
             </h1>
           </div>
           <p className="mt-4 text-xl text-slate-300">
-            Submit two videos and analyse frame-by-frame similarity
-            with visual timeline
+            Submit two videos and analyse frame-by-frame similarity with visual
+            timeline
           </p>
           <p className="mt-2 text-xs text-slate-500">
             Videos and video data are not stored
@@ -202,7 +202,10 @@ export default function Index() {
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
             onClick={() => setEnlargedImage(null)}
           >
-            <div className="relative max-w-2xl" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="relative max-w-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 onClick={() => setEnlargedImage(null)}
                 className="absolute -top-10 right-0 text-white hover:text-slate-300 transition"
