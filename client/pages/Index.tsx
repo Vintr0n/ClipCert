@@ -494,7 +494,8 @@ function FrameComparisonItem({
   video1Thumbnail,
   video2Thumbnail,
   isSelected = false,
-}: FrameComparisonItemProps & { onImageClick?: (src: string) => void }) {
+  onImageClick,
+}: FrameComparisonItemProps) {
   const isMatch = similarity > 0.8;
   const isPartial = similarity > 0.5;
 
