@@ -68,14 +68,22 @@ export default function Index() {
     setSelectedFrameIndex(null);
 
     try {
+      // Extract frames from video 1 (0-40% progress)
+      setComparisonProgress(5);
       const frames1 = await extractFrames(video1, FRAME_INTERVAL, CROP_SIZE);
-      setComparisonProgress(50);
+      setComparisonProgress(25);
 
+      // Extract frames from video 2 (40-75% progress)
+      setComparisonProgress(35);
       const frames2 = await extractFrames(video2, FRAME_INTERVAL, CROP_SIZE);
-      setComparisonProgress(75);
+      setComparisonProgress(60);
 
+      // Compare frames (75-100% progress) with granular updates
       const frameComparisons: FrameComparison[] = [];
       const minFrames = Math.min(frames1.length, frames2.length);
+      const comparisonStartProgress = 70;
+      const comparisonEndProgress = 98;
+      const comparisonRange = comparisonEndProgress - comparisonStartProgress;
 
       for (let i = 0; i < minFrames; i++) {
         const similarity = compareFrames(frames1[i], frames2[i]);
@@ -85,6 +93,15 @@ export default function Index() {
           video1Thumbnail: getThumbnailUrl(frames1[i]),
           video2Thumbnail: getThumbnailUrl(frames2[i]),
         });
+
+        // Update progress incrementally during comparison
+        const progressPercentage = Math.floor(
+          comparisonStartProgress +
+            (comparisonRange * (i + 1)) / minFrames
+        );
+        if (progressPercentage % 5 === 0 || i === minFrames - 1) {
+          setComparisonProgress(Math.min(progressPercentage, comparisonEndProgress));
+        }
       }
 
       setComparisons(frameComparisons);
