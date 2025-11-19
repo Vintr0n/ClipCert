@@ -13,6 +13,7 @@ import {
   AlertCircle,
   XCircle,
   ChevronDown,
+  ZoomIn,
 } from "lucide-react";
 
 interface FrameComparison {
@@ -37,6 +38,7 @@ export default function Index() {
   const [selectedFrameIndex, setSelectedFrameIndex] = useState<number | null>(
     null,
   );
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
   const frameListRef = useRef<HTMLDivElement>(null);
   const frameItemsRef = useRef<Map<number, HTMLDivElement>>(new Map());
 
@@ -129,17 +131,17 @@ export default function Index() {
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-16 text-center">
-          <div className="mb-4 inline-block">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 opacity-0 blur-lg"></div>
-              <h1 className="relative text-5xl font-bold tracking-tight text-white md:text-6xl">
-                ClipCert
-              </h1>
-            </div>
+          <div className="mb-6">
+            <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent drop-shadow-lg md:text-7xl">
+              ClipCert
+            </h1>
           </div>
-          <p className="mt-6 text-xl text-slate-300">
+          <p className="mt-4 text-xl text-slate-300">
             Submit two videos and analyse frame-by-frame similarity
             with visual timeline
+          </p>
+          <p className="mt-2 text-xs text-slate-500">
+            Videos and video data are not stored
           </p>
         </div>
 
@@ -193,6 +195,28 @@ export default function Index() {
             </Button>
           </div>
         </div>
+
+        {/* Image Modal */}
+        {enlargedImage && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            onClick={() => setEnlargedImage(null)}
+          >
+            <div className="relative max-w-2xl" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => setEnlargedImage(null)}
+                className="absolute -top-10 right-0 text-white hover:text-slate-300 transition"
+              >
+                <X className="h-6 w-6" />
+              </button>
+              <img
+                src={enlargedImage}
+                alt="Enlarged frame"
+                className="rounded-lg border border-white/20 max-h-96 w-auto"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Results Section */}
         {comparisons.length > 0 && (
@@ -321,6 +345,7 @@ export default function Index() {
                         isSelected={
                           selectedFrameIndex === comparison.frameIndex
                         }
+                        onImageClick={setEnlargedImage}
                       />
                     </div>
                   ))}
@@ -373,6 +398,9 @@ function VideoUploadPanel({
                 className="h-full w-full object-cover"
               />
             </div>
+            <p className="text-xs text-slate-500">
+              Videos and video data are not stored on our servers
+            </p>
           </div>
         ) : (
           <div
@@ -385,10 +413,10 @@ function VideoUploadPanel({
             <div>
               <h3 className="text-lg font-semibold text-white">{title}</h3>
               <p className="mt-1 text-sm text-slate-300">
-                Click to upload or drag and drop
+                Click to submit or drag and drop
               </p>
-              <p className="text-xs text-slate-400">
-                MP4, WebM, or other video
+              <p className="text-xs text-slate-500">
+                Videos and video data are not stored
               </p>
             </div>
           </div>
@@ -397,7 +425,7 @@ function VideoUploadPanel({
         <input
           ref={inputRef}
           type="file"
-          accept="video/*"
+          accept="*"
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) {
@@ -465,7 +493,7 @@ function FrameComparisonItem({
   video1Thumbnail,
   video2Thumbnail,
   isSelected = false,
-}: FrameComparisonItemProps) {
+}: FrameComparisonItemProps & { onImageClick?: (src: string) => void }) {
   const isMatch = similarity > 0.8;
   const isPartial = similarity > 0.5;
 
@@ -503,16 +531,24 @@ function FrameComparisonItem({
           </div>
 
           <div className="flex gap-2">
-            <img
-              src={video1Thumbnail}
-              alt={`Frame ${frameIndex} video 1`}
-              className="h-14 w-20 rounded border border-white/20 object-cover"
-            />
-            <img
-              src={video2Thumbnail}
-              alt={`Frame ${frameIndex} video 2`}
-              className="h-14 w-20 rounded border border-white/20 object-cover"
-            />
+            <div className="group relative">
+              <img
+                src={video1Thumbnail}
+                alt={`Frame ${frameIndex} video 1`}
+                className="h-14 w-20 rounded border border-white/20 object-cover cursor-pointer transition hover:border-blue-400"
+                onClick={() => onImageClick?.(video1Thumbnail)}
+              />
+              <ZoomIn className="absolute inset-0 m-auto h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition pointer-events-none" />
+            </div>
+            <div className="group relative">
+              <img
+                src={video2Thumbnail}
+                alt={`Frame ${frameIndex} video 2`}
+                className="h-14 w-20 rounded border border-white/20 object-cover cursor-pointer transition hover:border-cyan-400"
+                onClick={() => onImageClick?.(video2Thumbnail)}
+              />
+              <ZoomIn className="absolute inset-0 m-auto h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition pointer-events-none" />
+            </div>
           </div>
 
           <div className="flex-1">
