@@ -38,7 +38,11 @@ export default function Index() {
   const [selectedFrameIndex, setSelectedFrameIndex] = useState<number | null>(
     null,
   );
-  const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
+  const [enlargedImages, setEnlargedImages] = useState<{
+    video1: string;
+    video2: string;
+    frameIndex: number;
+  } | null>(null);
   const frameListRef = useRef<HTMLDivElement>(null);
   const frameItemsRef = useRef<Map<number, HTMLDivElement>>(new Map());
 
@@ -105,6 +109,18 @@ export default function Index() {
         element.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
     }, 0);
+  };
+
+  const handleImageClick = (
+    frameIndex: number,
+    video1Src: string,
+    video2Src: string
+  ) => {
+    setEnlargedImages({
+      video1: video1Src,
+      video2: video2Src,
+      frameIndex,
+    });
   };
 
   const stats = {
@@ -196,27 +212,45 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Image Modal */}
-        {enlargedImage && (
+        {/* Image Comparison Modal */}
+        {enlargedImages && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-            onClick={() => setEnlargedImage(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4"
+            onClick={() => setEnlargedImages(null)}
           >
             <div
-              className="relative max-w-2xl"
+              className="relative w-full max-w-5xl"
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                onClick={() => setEnlargedImage(null)}
-                className="absolute -top-10 right-0 text-white hover:text-slate-300 transition"
+                onClick={() => setEnlargedImages(null)}
+                className="absolute -top-8 right-0 z-10 text-white hover:text-slate-300 transition"
               >
-                <X className="h-6 w-6" />
+                <X className="h-8 w-8" />
               </button>
-              <img
-                src={enlargedImage}
-                alt="Enlarged frame"
-                className="rounded-lg border border-white/20 max-h-96 w-auto"
-              />
+              <div className="space-y-2">
+                <p className="text-sm text-slate-300 text-center">
+                  Frame {enlargedImages.frameIndex + 1} Comparison
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col items-center">
+                    <p className="text-xs text-slate-400 mb-2">Video 1</p>
+                    <img
+                      src={enlargedImages.video1}
+                      alt="Video 1 frame"
+                      className="rounded-lg border border-blue-400/50 w-full h-auto object-contain max-h-96"
+                    />
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <p className="text-xs text-slate-400 mb-2">Video 2</p>
+                    <img
+                      src={enlargedImages.video2}
+                      alt="Video 2 frame"
+                      className="rounded-lg border border-cyan-400/50 w-full h-auto object-contain max-h-96"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -348,7 +382,7 @@ export default function Index() {
                         isSelected={
                           selectedFrameIndex === comparison.frameIndex
                         }
-                        onImageClick={setEnlargedImage}
+                        onImageClick={handleImageClick}
                       />
                     </div>
                   ))}
@@ -428,7 +462,8 @@ function VideoUploadPanel({
         <input
           ref={inputRef}
           type="file"
-          accept="*"
+          accept="video/*,.mov,.mp4,.webm,.mkv,image/heic,image/heif"
+          capture="environment"
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) {
@@ -488,7 +523,7 @@ interface FrameComparisonItemProps {
   video1Thumbnail: string;
   video2Thumbnail: string;
   isSelected?: boolean;
-  onImageClick?: (src: string) => void;
+  onImageClick?: (frameIndex: number, video1: string, video2: string) => void;
 }
 
 function FrameComparisonItem({
@@ -541,7 +576,9 @@ function FrameComparisonItem({
                 src={video1Thumbnail}
                 alt={`Frame ${frameIndex} video 1`}
                 className="h-14 w-20 rounded border border-white/20 object-cover cursor-pointer transition hover:border-blue-400"
-                onClick={() => onImageClick?.(video1Thumbnail)}
+                onClick={() =>
+                  onImageClick?.(frameIndex, video1Thumbnail, video2Thumbnail)
+                }
               />
               <ZoomIn className="absolute inset-0 m-auto h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition pointer-events-none" />
             </div>
@@ -550,7 +587,9 @@ function FrameComparisonItem({
                 src={video2Thumbnail}
                 alt={`Frame ${frameIndex} video 2`}
                 className="h-14 w-20 rounded border border-white/20 object-cover cursor-pointer transition hover:border-cyan-400"
-                onClick={() => onImageClick?.(video2Thumbnail)}
+                onClick={() =>
+                  onImageClick?.(frameIndex, video1Thumbnail, video2Thumbnail)
+                }
               />
               <ZoomIn className="absolute inset-0 m-auto h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition pointer-events-none" />
             </div>
