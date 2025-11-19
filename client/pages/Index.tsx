@@ -138,7 +138,7 @@ export default function Index() {
             </div>
           </div>
           <p className="mt-6 text-xl text-slate-300">
-            Upload two videos and instantly analyse frame-by-frame similarity
+            Submit two videos and analyse frame-by-frame similarity
             with visual timeline
           </p>
         </div>
