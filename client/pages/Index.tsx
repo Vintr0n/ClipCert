@@ -485,6 +485,7 @@ interface FrameComparisonItemProps {
   video1Thumbnail: string;
   video2Thumbnail: string;
   isSelected?: boolean;
+  onImageClick?: (src: string) => void;
 }
 
 function FrameComparisonItem({
