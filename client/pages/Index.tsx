@@ -319,8 +319,14 @@ export default function Index() {
                 {/* Visual Timeline Bar */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
-                      <div className="inline-flex gap-0.5 rounded-lg bg-white/10 p-2">
+                    <div className="flex-1 overflow-x-auto">
+                      <div
+                        className="inline-flex gap-px rounded-lg bg-white/10 p-2"
+                        style={{
+                          minWidth: "100%",
+                          minHeight: "44px"
+                        }}
+                      >
                         {comparisons.map((comparison) => {
                           const isMatch = comparison.similarity > 0.8;
                           const isPartial = comparison.similarity > 0.5;
@@ -332,15 +338,21 @@ export default function Index() {
                           const isSelected =
                             selectedFrameIndex === comparison.frameIndex;
 
-                          // Calculate segment width based on frame count
-                          // For many frames, segments become very small
-                          let segmentWidthClass = "w-2";
-                          if (comparisons.length > 500) {
-                            segmentWidthClass = "w-0.5";
-                          } else if (comparisons.length > 200) {
-                            segmentWidthClass = "w-1";
-                          } else if (comparisons.length > 100) {
-                            segmentWidthClass = "w-1.5";
+                          // Calculate optimal segment width
+                          // Scales down as frame count increases
+                          let width: string;
+                          const frameCount = comparisons.length;
+
+                          if (frameCount > 800) {
+                            width = "2px";
+                          } else if (frameCount > 400) {
+                            width = "3px";
+                          } else if (frameCount > 200) {
+                            width = "4px";
+                          } else if (frameCount > 100) {
+                            width = "6px";
+                          } else {
+                            width = "8px";
                           }
 
                           return (
@@ -349,9 +361,15 @@ export default function Index() {
                               onClick={() =>
                                 handleTimelineClick(comparison.frameIndex)
                               }
-                              className={`${segmentWidthClass} h-8 rounded flex-shrink-0 transition hover:opacity-90 ${bgColor} ${
+                              style={{
+                                width,
+                                height: "32px",
+                                flexShrink: 0,
+                                gap: 0
+                              }}
+                              className={`rounded transition hover:opacity-90 ${bgColor} ${
                                 isSelected
-                                  ? "ring-2 ring-white ring-offset-1 ring-offset-slate-900"
+                                  ? "ring-1 ring-white ring-offset-1 ring-offset-slate-900"
                                   : ""
                               }`}
                               title={`Frame ${comparison.frameIndex + 1}: ${(comparison.similarity * 100).toFixed(0)}%`}
