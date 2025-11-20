@@ -96,11 +96,12 @@ export default function Index() {
 
         // Update progress incrementally during comparison
         const progressPercentage = Math.floor(
-          comparisonStartProgress +
-            (comparisonRange * (i + 1)) / minFrames
+          comparisonStartProgress + (comparisonRange * (i + 1)) / minFrames,
         );
         if (progressPercentage % 5 === 0 || i === minFrames - 1) {
-          setComparisonProgress(Math.min(progressPercentage, comparisonEndProgress));
+          setComparisonProgress(
+            Math.min(progressPercentage, comparisonEndProgress),
+          );
         }
       }
 
@@ -131,7 +132,7 @@ export default function Index() {
   const handleImageClick = (
     frameIndex: number,
     video1Src: string,
-    video2Src: string
+    video2Src: string,
   ) => {
     setEnlargedImages({
       video1: video1Src,
