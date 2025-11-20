@@ -1,11 +1,13 @@
 /**
  * Extract frames from a video file with center-crop region
  * Uses precise time-stepping to extract all frames consistently
+ * Supports progress callback for UI updates
  */
 export async function extractFrames(
   videoFile: File,
   _frameInterval: number = 1, // Ignore this - always extract all frames for accuracy
   cropSize: number = 250,
+  onProgress?: (progress: number) => void, // Progress callback: 0-100
 ): Promise<ImageData[]> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
