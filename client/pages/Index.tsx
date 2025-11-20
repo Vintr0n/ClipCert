@@ -480,7 +480,6 @@ function VideoUploadPanel({
           ref={inputRef}
           type="file"
           accept="video/*,.mov,.mp4,.webm,.mkv,image/heic,image/heif"
-          capture="environment"
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) {
