@@ -71,17 +71,27 @@ export default function Index() {
       setComparisonProgress(2);
 
       // Extract frames from video 1 (2-40% progress)
-      const frames1 = await extractFrames(video1, FRAME_INTERVAL, CROP_SIZE, (progress) => {
-        // Scale video 1 extraction to 2-40%
-        setComparisonProgress(2 + Math.floor((progress / 100) * 38));
-      });
+      const frames1 = await extractFrames(
+        video1,
+        FRAME_INTERVAL,
+        CROP_SIZE,
+        (progress) => {
+          // Scale video 1 extraction to 2-40%
+          setComparisonProgress(2 + Math.floor((progress / 100) * 38));
+        },
+      );
 
       // Extract frames from video 2 (42-80% progress)
       setComparisonProgress(42);
-      const frames2 = await extractFrames(video2, FRAME_INTERVAL, CROP_SIZE, (progress) => {
-        // Scale video 2 extraction to 42-80%
-        setComparisonProgress(42 + Math.floor((progress / 100) * 38));
-      });
+      const frames2 = await extractFrames(
+        video2,
+        FRAME_INTERVAL,
+        CROP_SIZE,
+        (progress) => {
+          // Scale video 2 extraction to 42-80%
+          setComparisonProgress(42 + Math.floor((progress / 100) * 38));
+        },
+      );
 
       // Compare frames (82-98% progress) with non-blocking batches
       const frameComparisons: FrameComparison[] = [];

@@ -86,7 +86,9 @@ export async function extractFrames(
 
         // Report progress to callback
         if (onProgress && totalFrames > 0) {
-          const progressPercent = Math.floor((currentFrameIndex / totalFrames) * 100);
+          const progressPercent = Math.floor(
+            (currentFrameIndex / totalFrames) * 100,
+          );
           onProgress(progressPercent);
         }
 
