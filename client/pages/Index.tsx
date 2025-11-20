@@ -319,8 +319,8 @@ export default function Index() {
                 {/* Visual Timeline Bar */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <div className="flex gap-0.5 rounded-lg bg-white/10 p-2">
+                    <div className="flex-1 overflow-x-auto">
+                      <div className="inline-flex gap-0.5 rounded-lg bg-white/10 p-2 min-w-full">
                         {comparisons.map((comparison) => {
                           const isMatch = comparison.similarity > 0.8;
                           const isPartial = comparison.similarity > 0.5;
@@ -332,13 +332,18 @@ export default function Index() {
                           const isSelected =
                             selectedFrameIndex === comparison.frameIndex;
 
+                          // Dynamically scale segment width based on frame count
+                          // Minimum width ensures visibility even with many frames
+                          const minWidth = comparisons.length > 500 ? "w-px" : "w-1";
+                          const width = comparisons.length > 200 ? "min-w-0.5" : "min-w-1";
+
                           return (
                             <button
                               key={comparison.frameIndex}
                               onClick={() =>
                                 handleTimelineClick(comparison.frameIndex)
                               }
-                              className={`flex-1 h-8 rounded transition hover:opacity-90 ${bgColor} ${
+                              className={`${width} h-8 rounded transition hover:opacity-90 flex-shrink-0 ${bgColor} ${
                                 isSelected
                                   ? "ring-2 ring-white ring-offset-1 ring-offset-slate-900"
                                   : ""
