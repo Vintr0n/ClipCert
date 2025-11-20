@@ -23,7 +23,7 @@ interface FrameComparison {
   video2Thumbnail: string;
 }
 
-const FRAME_INTERVAL = 2; // Every other frame
+const FRAME_INTERVAL = 1; // Extract all frames for accuracy (ignored in new implementation)
 const CROP_SIZE = 250; // Center crop size
 
 export default function Index() {
