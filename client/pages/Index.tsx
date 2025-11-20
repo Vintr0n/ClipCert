@@ -324,7 +324,7 @@ export default function Index() {
                         className="inline-flex gap-px rounded-lg bg-white/10 p-2"
                         style={{
                           minWidth: "100%",
-                          minHeight: "44px"
+                          minHeight: "44px",
                         }}
                       >
                         {comparisons.map((comparison) => {
@@ -365,7 +365,7 @@ export default function Index() {
                                 width,
                                 height: "32px",
                                 flexShrink: 0,
-                                gap: 0
+                                gap: 0,
                               }}
                               className={`rounded transition hover:opacity-90 ${bgColor} ${
                                 isSelected
