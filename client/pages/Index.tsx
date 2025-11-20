@@ -68,42 +68,58 @@ export default function Index() {
     setSelectedFrameIndex(null);
 
     try {
-      // Extract frames from video 1 (0-40% progress)
-      setComparisonProgress(5);
-      const frames1 = await extractFrames(video1, FRAME_INTERVAL, CROP_SIZE);
-      setComparisonProgress(25);
+      setComparisonProgress(2);
 
-      // Extract frames from video 2 (40-75% progress)
-      setComparisonProgress(35);
-      const frames2 = await extractFrames(video2, FRAME_INTERVAL, CROP_SIZE);
-      setComparisonProgress(60);
+      // Extract frames from video 1 (2-40% progress)
+      const frames1 = await extractFrames(video1, FRAME_INTERVAL, CROP_SIZE, (progress) => {
+        // Scale video 1 extraction to 2-40%
+        setComparisonProgress(2 + Math.floor((progress / 100) * 38));
+      });
 
-      // Compare frames (75-100% progress) with granular updates
+      // Extract frames from video 2 (42-80% progress)
+      setComparisonProgress(42);
+      const frames2 = await extractFrames(video2, FRAME_INTERVAL, CROP_SIZE, (progress) => {
+        // Scale video 2 extraction to 42-80%
+        setComparisonProgress(42 + Math.floor((progress / 100) * 38));
+      });
+
+      // Compare frames (82-98% progress) with non-blocking batches
       const frameComparisons: FrameComparison[] = [];
       const minFrames = Math.min(frames1.length, frames2.length);
-      const comparisonStartProgress = 70;
-      const comparisonEndProgress = 98;
-      const comparisonRange = comparisonEndProgress - comparisonStartProgress;
 
-      for (let i = 0; i < minFrames; i++) {
-        const similarity = compareFrames(frames1[i], frames2[i]);
-        frameComparisons.push({
-          frameIndex: i,
-          similarity,
-          video1Thumbnail: getThumbnailUrl(frames1[i]),
-          video2Thumbnail: getThumbnailUrl(frames2[i]),
+      // Process frames in batches to avoid blocking the UI
+      const batchSize = Math.max(1, Math.floor(minFrames / 100)); // ~100 batches
+
+      const processBatch = (startIdx: number) => {
+        return new Promise<void>((batchResolve) => {
+          const endIdx = Math.min(startIdx + batchSize, minFrames);
+
+          for (let i = startIdx; i < endIdx; i++) {
+            const similarity = compareFrames(frames1[i], frames2[i]);
+            frameComparisons.push({
+              frameIndex: i,
+              similarity,
+              video1Thumbnail: getThumbnailUrl(frames1[i]),
+              video2Thumbnail: getThumbnailUrl(frames2[i]),
+            });
+          }
+
+          // Update progress
+          const progressPercent = Math.floor((endIdx / minFrames) * 16) + 82; // 82-98%
+          setComparisonProgress(progressPercent);
+
+          if (endIdx >= minFrames) {
+            batchResolve();
+          } else {
+            // Yield control back to browser before processing next batch
+            setTimeout(() => {
+              processBatch(endIdx).then(batchResolve);
+            }, 0);
+          }
         });
+      };
 
-        // Update progress incrementally during comparison
-        const progressPercentage = Math.floor(
-          comparisonStartProgress + (comparisonRange * (i + 1)) / minFrames,
-        );
-        if (progressPercentage % 5 === 0 || i === minFrames - 1) {
-          setComparisonProgress(
-            Math.min(progressPercentage, comparisonEndProgress),
-          );
-        }
-      }
+      await processBatch(0);
 
       setComparisons(frameComparisons);
       setComparisonProgress(100);
