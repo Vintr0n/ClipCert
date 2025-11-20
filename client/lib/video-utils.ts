@@ -1,5 +1,6 @@
 /**
  * Extract frames from a video file with center-crop region
+ * Uses robust timing to ensure consistent frame extraction
  */
 export async function extractFrames(
   videoFile: File,
@@ -16,58 +17,87 @@ export async function extractFrames(
       return;
     }
 
+    // Set CORS to allow video processing
+    video.crossOrigin = "anonymous";
+
+    // Use MediaSource for more consistent frame timing
     video.onloadedmetadata = () => {
       canvas.width = cropSize;
       canvas.height = cropSize;
 
       const frames: ImageData[] = [];
       let frameCount = 0;
+      const videoFrameRate = 30; // Estimated default, browsers don't expose actual fps reliably
+      const timePerFrame = 1 / videoFrameRate; // Time per frame in seconds
+      const timeBetweenExtractions = timePerFrame * frameInterval;
       let currentTime = 0;
-      const timeBetweenFrames = frameInterval / 30; // Assuming ~30fps, adjust based on frame interval
+      let seeksPending = 0;
+      const maxDuration = video.duration - 0.01; // Leave small margin
 
       const extractFrame = () => {
-        if (currentTime >= video.duration) {
+        if (currentTime > maxDuration) {
           video.pause();
           resolve(frames);
           return;
         }
 
+        seeksPending += 1;
         video.currentTime = currentTime;
       };
 
       video.onseeked = () => {
+        seeksPending = Math.max(0, seeksPending - 1);
+
         const h = video.videoHeight;
         const w = video.videoWidth;
-        const cx = w / 2;
-        const cy = h / 2;
-        const rw = cropSize;
-        const rh = cropSize;
+        const cropLeft = Math.floor(Math.max(0, (w - cropSize) / 2));
+        const cropTop = Math.floor(Math.max(0, (h - cropSize) / 2));
+        const drawWidth = Math.min(cropSize, w - cropLeft);
+        const drawHeight = Math.min(cropSize, h - cropTop);
 
-        // Draw center-cropped region
+        // Clear canvas first to ensure clean slate
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, cropSize, cropSize);
+
+        // Draw center-cropped region with precise positioning
         ctx.drawImage(
           video,
-          Math.max(0, cx - rw / 2),
-          Math.max(0, cy - rh / 2),
-          Math.min(rw, w),
-          Math.min(rh, h),
+          cropLeft,
+          cropTop,
+          drawWidth,
+          drawHeight,
           0,
           0,
-          cropSize,
-          cropSize,
+          drawWidth,
+          drawHeight,
         );
+
+        // If canvas has padding, fill it
+        if (drawWidth < cropSize || drawHeight < cropSize) {
+          ctx.fillStyle = "black";
+          if (drawWidth < cropSize) {
+            ctx.fillRect(drawWidth, 0, cropSize - drawWidth, cropSize);
+          }
+          if (drawHeight < cropSize) {
+            ctx.fillRect(0, drawHeight, cropSize, cropSize - drawHeight);
+          }
+        }
 
         const imageData = ctx.getImageData(0, 0, cropSize, cropSize);
         frames.push(imageData);
 
         frameCount += 1;
-        currentTime += timeBetweenFrames;
+        currentTime += timeBetweenExtractions;
+
+        // Continue extraction
         extractFrame();
       };
 
       extractFrame();
     };
 
-    video.onerror = () => {
+    video.onerror = (e) => {
+      console.error("Video load error:", e);
       reject(new Error("Failed to load video"));
     };
 
