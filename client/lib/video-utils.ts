@@ -84,6 +84,12 @@ export async function extractFrames(
 
         currentFrameIndex++;
 
+        // Report progress to callback
+        if (onProgress && totalFrames > 0) {
+          const progressPercent = Math.floor((currentFrameIndex / totalFrames) * 100);
+          onProgress(progressPercent);
+        }
+
         if (currentFrameIndex >= totalFrames) {
           video.pause();
           resolve(frames);
