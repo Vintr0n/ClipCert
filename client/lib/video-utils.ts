@@ -127,6 +127,7 @@ export function hashFrame(imageData: ImageData): string {
 
 /**
  * Calculate similarity between two frames (0-1, where 1 is identical)
+ * Uses more forgiving thresholds for codec variations
  */
 export function compareFrames(frame1: ImageData, frame2: ImageData): number {
   const data1 = frame1.data;
@@ -137,21 +138,32 @@ export function compareFrames(frame1: ImageData, frame2: ImageData): number {
   }
 
   let matchingPixels = 0;
-  const threshold = 30; // Color difference threshold
+  let totalDifference = 0;
+  const threshold = 50; // Increased from 30 to account for compression artifacts
+  const pixelsToCheck = Math.floor(data1.length / 4);
 
-  // Sample every 4th pixel for performance
+  // Check every pixel (RGBA = 4 bytes)
   for (let i = 0; i < data1.length; i += 4) {
-    const diff =
-      Math.abs(data1[i] - data2[i]) +
-      Math.abs(data1[i + 1] - data2[i + 1]) +
-      Math.abs(data1[i + 2] - data2[i + 2]);
+    const rDiff = Math.abs(data1[i] - data2[i]);
+    const gDiff = Math.abs(data1[i + 1] - data2[i + 1]);
+    const bDiff = Math.abs(data1[i + 2] - data2[i + 2]);
+    const diff = rDiff + gDiff + bDiff;
+    totalDifference += diff;
 
     if (diff < threshold) {
       matchingPixels++;
     }
   }
 
-  return matchingPixels / (data1.length / 4);
+  // Calculate similarity based on matching pixels (primary metric)
+  const pixelSimilarity = matchingPixels / pixelsToCheck;
+
+  // Also use average color difference as secondary metric
+  const avgDifference = totalDifference / (pixelsToCheck * 255 * 3);
+  const colorSimilarity = Math.max(0, 1 - avgDifference);
+
+  // Weight pixel matching more heavily than color difference
+  return pixelSimilarity * 0.7 + colorSimilarity * 0.3;
 }
 
 /**
