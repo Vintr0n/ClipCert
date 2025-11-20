@@ -24,18 +24,18 @@ export async function extractFrames(
       canvas.height = cropSize;
 
       const frames: ImageData[] = [];
-      
+
       // Detect actual video framerate (default to 30fps if unavailable)
       // Most videos are 24fps, 29.97fps, or 30fps
       let fps = 30;
       if (video.mozFrameDelay) {
         fps = 1000 / video.mozFrameDelay;
       }
-      
+
       const frameTime = 1 / fps; // Duration of each frame in seconds
       const duration = video.duration;
       const totalFrames = Math.floor(duration / frameTime);
-      
+
       let currentFrameIndex = 0;
       let pendingSeek = false;
 
