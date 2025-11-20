@@ -1,10 +1,10 @@
 /**
  * Extract frames from a video file with center-crop region
- * Uses frame-accurate extraction to ensure perfect alignment
+ * Uses precise time-stepping to extract all frames consistently
  */
 export async function extractFrames(
   videoFile: File,
-  _frameInterval: number = 1, // Now always 1 for accuracy - we extract every frame
+  _frameInterval: number = 1, // Ignore this - always extract all frames for accuracy
   cropSize: number = 250,
 ): Promise<ImageData[]> {
   return new Promise((resolve, reject) => {
@@ -24,97 +24,87 @@ export async function extractFrames(
       canvas.height = cropSize;
 
       const frames: ImageData[] = [];
-      let isExtracting = false;
-      let extractionComplete = false;
+      
+      // Detect actual video framerate (default to 30fps if unavailable)
+      // Most videos are 24fps, 29.97fps, or 30fps
+      let fps = 30;
+      if (video.mozFrameDelay) {
+        fps = 1000 / video.mozFrameDelay;
+      }
+      
+      const frameTime = 1 / fps; // Duration of each frame in seconds
+      const duration = video.duration;
+      const totalFrames = Math.floor(duration / frameTime);
+      
+      let currentFrameIndex = 0;
+      let pendingSeek = false;
 
-      const extractFrameFromVideo = async () => {
-        return new Promise<void>((frameResolve) => {
-          // Use requestAnimationFrame to ensure frame is rendered
-          requestAnimationFrame(() => {
-            const h = video.videoHeight;
-            const w = video.videoWidth;
-            const cropLeft = Math.floor(Math.max(0, (w - cropSize) / 2));
-            const cropTop = Math.floor(Math.max(0, (h - cropSize) / 2));
-            const drawWidth = Math.min(cropSize, w - cropLeft);
-            const drawHeight = Math.min(cropSize, h - cropTop);
+      const extractCurrentFrame = () => {
+        if (pendingSeek) return;
 
-            // Clear canvas
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, cropSize, cropSize);
+        const h = video.videoHeight;
+        const w = video.videoWidth;
+        const cropLeft = Math.floor(Math.max(0, (w - cropSize) / 2));
+        const cropTop = Math.floor(Math.max(0, (h - cropSize) / 2));
+        const drawWidth = Math.min(cropSize, w - cropLeft);
+        const drawHeight = Math.min(cropSize, h - cropTop);
 
-            // Draw center-cropped region
-            ctx.drawImage(
-              video,
-              cropLeft,
-              cropTop,
-              drawWidth,
-              drawHeight,
-              0,
-              0,
-              drawWidth,
-              drawHeight,
-            );
+        // Clear canvas
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, cropSize, cropSize);
 
-            // Fill padding if needed
-            if (drawWidth < cropSize || drawHeight < cropSize) {
-              ctx.fillStyle = "black";
-              if (drawWidth < cropSize) {
-                ctx.fillRect(drawWidth, 0, cropSize - drawWidth, cropSize);
-              }
-              if (drawHeight < cropSize) {
-                ctx.fillRect(0, drawHeight, cropSize, cropSize - drawHeight);
-              }
-            }
+        // Draw center-cropped region
+        ctx.drawImage(
+          video,
+          cropLeft,
+          cropTop,
+          drawWidth,
+          drawHeight,
+          0,
+          0,
+          drawWidth,
+          drawHeight,
+        );
 
-            const imageData = ctx.getImageData(0, 0, cropSize, cropSize);
-            frames.push(imageData);
-            frameResolve();
-          });
-        });
-      };
-
-      const stepThroughVideo = async () => {
-        isExtracting = true;
-
-        // Extract first frame
-        await extractFrameFromVideo();
-
-        // Step through remaining frames
-        while (!extractionComplete && video.currentTime < video.duration - 0.001) {
-          // Small advance in time to get next frame
-          // At 30fps, frame duration is ~0.033s, but we use smaller increment for safety
-          video.currentTime += 0.016; // ~60fps fallback
-
-          // Wait for frame to be ready
-          await new Promise<void>((frameResolve) => {
-            let frameWaitCount = 0;
-            const checkFrame = () => {
-              frameWaitCount++;
-              if (frameWaitCount > 100) {
-                // Timeout - move on
-                frameResolve();
-                return;
-              }
-              requestAnimationFrame(async () => {
-                await extractFrameFromVideo();
-                frameResolve();
-              });
-            };
-            checkFrame();
-          });
+        // Fill padding if needed
+        if (drawWidth < cropSize || drawHeight < cropSize) {
+          ctx.fillStyle = "black";
+          if (drawWidth < cropSize) {
+            ctx.fillRect(drawWidth, 0, cropSize - drawWidth, cropSize);
+          }
+          if (drawHeight < cropSize) {
+            ctx.fillRect(0, drawHeight, cropSize, cropSize - drawHeight);
+          }
         }
 
-        isExtracting = false;
-        extractionComplete = true;
-        resolve(frames);
+        const imageData = ctx.getImageData(0, 0, cropSize, cropSize);
+        frames.push(imageData);
+
+        currentFrameIndex++;
+
+        if (currentFrameIndex >= totalFrames) {
+          video.pause();
+          resolve(frames);
+          return;
+        }
+
+        // Seek to next frame
+        pendingSeek = true;
+        const nextTime = currentFrameIndex * frameTime;
+        // Clamp to duration
+        video.currentTime = Math.min(nextTime, duration - 0.001);
       };
 
-      // Start extraction once video is ready
-      setTimeout(() => {
-        stepThroughVideo().catch((error) => {
-          reject(error);
+      video.onseeked = () => {
+        pendingSeek = false;
+        // Small delay to ensure frame is rendered
+        requestAnimationFrame(() => {
+          extractCurrentFrame();
         });
-      }, 100);
+      };
+
+      // Start extraction
+      video.currentTime = 0;
     };
 
     video.onerror = (e) => {
@@ -148,7 +138,7 @@ export function hashFrame(imageData: ImageData): string {
 
 /**
  * Calculate similarity between two frames (0-1, where 1 is identical)
- * Optimized for accuracy when comparing identical videos
+ * Optimized for accuracy with proper thresholds
  */
 export function compareFrames(frame1: ImageData, frame2: ImageData): number {
   const data1 = frame1.data;
@@ -160,7 +150,7 @@ export function compareFrames(frame1: ImageData, frame2: ImageData): number {
 
   let matchingPixels = 0;
   let totalDifference = 0;
-  const threshold = 45; // Threshold for pixel color difference
+  const threshold = 35; // Threshold for pixel color difference (adjusted for accuracy)
   const pixelsToCheck = Math.floor(data1.length / 4);
 
   // Check every pixel for maximum accuracy
@@ -179,9 +169,9 @@ export function compareFrames(frame1: ImageData, frame2: ImageData): number {
   // Calculate final similarity score
   const pixelSimilarity = matchingPixels / pixelsToCheck;
 
-  // Boost the score for near-identical frames to ensure 100% match for same video
-  // If pixel similarity is > 98%, round to 1.0
-  if (pixelSimilarity > 0.98) {
+  // For near-identical frames (codec compression variations), round up
+  // This ensures same video = 100%, different videos show actual difference
+  if (pixelSimilarity >= 0.99) {
     return 1.0;
   }
 
