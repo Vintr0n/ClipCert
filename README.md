@@ -1,5 +1,5 @@
 # ClipCert
-
+https://www.clipcert.com
 > Frame-by-frame video comparison tool for content verification and authenticity checking
 
 ClipCert is a web application to assist in verification of video authenticity by comparing video content.
